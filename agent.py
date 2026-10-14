@@ -1,6 +1,9 @@
-# Curl is an HTTP Client
-# For llama.cpp the endpoint POST v1/chat/completions is stateless , so every calls needs all the messages that has happened so far.
-# Being stateless or statefull is a property of an endpoint and not code
+"""
+Curl is an HTTP Client
+For llama.cpp the endpoint POST v1/chat/completions is stateless.
+So every calls needs all the messages that has happened so far.
+Being stateless or statefull is a property of an endpoint and not code
+"""
 
 import requests
 
@@ -12,6 +15,6 @@ data = {
     ]
   }
 
-response = requests.post(url, data=data)
+response = requests.post(url, json=data).json()
 
-print(response)
+print(response["choices"][0]["message"]["content"])
