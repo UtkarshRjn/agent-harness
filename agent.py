@@ -40,12 +40,18 @@ while True:
     messages.append(user_msg)
 
     data = {
+        "model" : "local",
         "messages": messages
     }
 
     try:
         response = requests.post(url, json=data)
     except requests.exceptions.ConnectionError:
+        print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
+        messages.pop()
+        continue
+
+    if response.status_code != 200:
         print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
         messages.pop()
         continue
