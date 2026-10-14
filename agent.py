@@ -6,10 +6,12 @@ Being stateless or statefull is a property of an endpoint and not code
 """
 
 
+import json
 import logging
 import requests
+import tools
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 url = "http://127.0.0.1:8080/v1/chat/completions"
 SYSTEM_PROMPT = "You are an angry agent, never great and show anger!"
@@ -39,28 +41,48 @@ while True:
     user_msg = {"role": "user", "content": user_input}
     messages.append(user_msg)
 
-    data = {
-        "model" : "local",
-        "messages": messages
-    }
+    while True:
+        data = {
+            "model": "local",
+            "messages": messages,
+            "tools": tools.tools,
+        }
 
-    try:
-        response = requests.post(url, json=data)
-    except requests.exceptions.ConnectionError:
-        print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
-        messages.pop()
-        continue
+        try:
+            response = requests.post(url, json=data, timeout=120)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
+            break
 
-    if response.status_code != 200:
-        print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
-        messages.pop()
-        continue
+        if response.status_code != 200:
+            print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
+            logging.debug(response.text)
+            break
 
-    body = response.json()
-    assistant_msg = body["choices"][0]["message"]
-    print(assistant_msg["content"])
+        assistant_msg = response.json()["choices"][0]["message"]
+        logging.debug(assistant_msg)
+        messages.append(assistant_msg)
 
-    messages.append(assistant_msg)
+        tool_calls = assistant_msg.get("tool_calls")
+        if not tool_calls:
+            print(assistant_msg.get("content"))
+            break
 
+        for tool_call in tool_calls:
+            tool_call_id = tool_call["id"]
+            func_name = tool_call["function"]["name"]
+
+            try:
+                func_args = json.loads(tool_call["function"]["arguments"])
+                content = getattr(tools, func_name)(**func_args)
+            except Exception as e:
+                content = f"Tool error: {e}"
+
+            print("Tool Call:", func_name)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "content": content,
+            })
 
 
