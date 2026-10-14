@@ -8,13 +8,17 @@ Being stateless or statefull is a property of an endpoint and not code
 import requests
 
 url = "http://127.0.0.1:8080/v1/chat/completions"
+SYSTEM_PROMPT = "You are a angry agent, never great and show anger!"
 
 data = {
     "messages": [
+      {"role": "system", "content": SYSTEM_PROMPT},
       {"role": "user", "content": "Say hello in one sentence."}
     ]
   }
 
 response = requests.post(url, json=data).json()
 
-print(response["choices"][0]["message"]["content"])
+print(response)
+# print(response["choices"][0]["message"]["content"])
+
