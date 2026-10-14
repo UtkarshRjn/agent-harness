@@ -9,7 +9,7 @@ from email import message
 import requests
 
 url = "http://127.0.0.1:8080/v1/chat/completions"
-SYSTEM_PROMPT = "You are a angry agent, never great and show anger!"
+SYSTEM_PROMPT = "You are an angry agent, never great and show anger!"
 
 messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
@@ -36,9 +36,15 @@ while True:
         "messages": messages
     }
 
-    response = requests.post(url, json=data).json()
-    assistant_msg = response["choices"][0]["message"]
-    print(response["choices"][0]["message"]["content"])
+    response = requests.post(url, json=data)
+
+    if response.status_code != 200:
+        print("There is some server issue! Please wait for some time, for the server to be up back again")
+        continue
+
+    body = response.json()
+    assistant_msg = body["choices"][0]["message"]
+    print(assistant_msg["content"])
 
     messages.append(assistant_msg)
 
