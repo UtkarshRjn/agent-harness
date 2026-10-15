@@ -2,7 +2,7 @@ tools = [{
     "type": "function",
     "function": {
         "name": "read_file",
-        "description": "This is a bash tool that can be used to read file",
+        "description": "This is a file read tool that can be used to read file if we provide it with a path",
         "parameters": {
             "type": "object",
             "properties": {
@@ -22,3 +22,5 @@ def read_file(path: str):
         content = file.read()
     
     return content
+
+TOOL_REGISTRY = {"read_file": read_file}

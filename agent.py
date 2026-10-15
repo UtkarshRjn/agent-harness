@@ -11,10 +11,14 @@ import logging
 import requests
 import tools
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 url = "http://127.0.0.1:8080/v1/chat/completions"
-SYSTEM_PROMPT = "You are an angry agent, never great and show anger!"
+SYSTEM_PROMPT = """
+You are an angry agent, never great and show anger!
+You can use tools to perform whatever action you're told to do.
+You can use read_file tool to read a file.
+"""
 
 messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
@@ -52,10 +56,14 @@ while True:
             response = requests.post(url, json=data, timeout=120)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
+            if messages[-1]["role"] == "user":
+                messages.pop()
             break
 
         if response.status_code != 200:
             print("⚠️ There is some server issue! Please wait for some time, for the server to be up back again")
+            if messages[-1]["role"] == "user":
+                messages.pop()
             logging.debug(response.text)
             break
 
@@ -72,11 +80,14 @@ while True:
             tool_call_id = tool_call["id"]
             func_name = tool_call["function"]["name"]
 
-            try:
-                func_args = json.loads(tool_call["function"]["arguments"])
-                content = getattr(tools, func_name)(**func_args)
-            except Exception as e:
-                content = f"Tool error: {e}"
+            if func_name not in tools.TOOL_REGISTRY:
+                content = "Error: unknown tool: " + func_name
+            else:
+                try:
+                    func_args = json.loads(tool_call["function"]["arguments"])
+                    content = tools.TOOL_REGISTRY[func_name](**func_args)
+                except Exception as e:
+                    content = f"Tool error: {e}"
 
             print("Tool Call:", func_name)
             messages.append({
