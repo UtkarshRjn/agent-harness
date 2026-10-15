@@ -5,8 +5,10 @@ So every calls needs all the messages that has happened so far.
 Being stateless or statefull is a property of an endpoint and not code
 """
 
+import os
 import logging
 import requests
+from datetime import datetime
 from tools import *
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -49,9 +51,14 @@ while True: # REPL Loop (Read Eval Print Loop)
     messages.append(user_msg)
 
     while True:
+
+        # Adding injection to messages
+        injection_content = f"cwd: {os.getcwd()}, date_time: {datetime.now()}"
+        injection = {"role": "user", "content": injection_content}
+
         data = {
             "model": "local",
-            "messages": messages,
+            "messages": messages + [injection],
             "tools": tools,
         }
 

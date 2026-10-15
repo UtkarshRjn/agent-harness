@@ -1,16 +1,28 @@
 import json
 
+"""
+We are adding offest and limit to file read so that large files that don't fit into the context memory can also be read by an agent one by one.
+"""
+
 tools = [{
     "type": "function",
     "function": {
         "name": "read_file",
-        "description": "This is a file read tool that can be used to read file if we provide it with a path",
+        "description": "Read a slice of a file. Returns one header line 'start-end/total' then the text. Use offset and limit to page through large files.",
         "parameters": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
                     "description": "Path of the file to read"
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "The offset value from where you want to read"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Numer of charcters in the file you want to read"
                 }
             },
             "required": ["path"]
@@ -64,12 +76,22 @@ tools = [{
 }
 ]
 
-def read_file(path: str) -> str:
+MAX_CONTENT_SIZE = 8000 # Won't give more than 8000 characters to an agent
 
-    with open(path, 'r') as file:
-        content = file.read()
-    
-    return content
+def read_file(path: str, offset: int = 0, limit: int = 1000) -> str:
+
+    with open(path, "r") as file:
+        file.seek(0, 2)
+        total = file.tell()
+
+        if offset > total:
+            offset = total
+        
+        file.seek(offset)
+        content = file.read(limit)
+
+    end = offset + len(content)
+    return f"Header: {offset}-{end}/{total} \n Content: {content}"
 
 def write_file(path: str, content: str) -> str:
     with open(path, "w") as file:
@@ -110,6 +132,9 @@ def execute(tool_call):
         except Exception as e:
             content = f"Tool error: {e}"
     
+    if len(content) >= MAX_CONTENT_SIZE:
+        content = content[:MAX_CONTENT_SIZE] + f"\n(truncated, original {len(content)} chars)"
+
     return content
 
 TOOL_REGISTRY = {
