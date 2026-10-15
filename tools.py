@@ -36,7 +36,33 @@ tools = [{
             "required": ["path", "content"]
         }
     }
-}]
+},
+{
+    "type": "function",
+    "function": {
+        "name": "str_replace",
+        "description": "Replace a string with another string in a file with the given path.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Path of the file wherein we want to replace string"
+                },
+                "old_string": {
+                    "type": "string",
+                    "description": "Original string in the file"
+                },
+                "new_string": {
+                    "type": "string",
+                    "description": "New string in the file"
+                }
+            },
+            "required": ["path", "old_string", "new_string"]
+        }
+    }
+}
+]
 
 def read_file(path: str) -> str:
 
@@ -50,6 +76,25 @@ def write_file(path: str, content: str) -> str:
         file.write(content)
     
     return f"Wrote {len(content)} characters to {path}"
+
+def str_replace(path: str, old_string: str, new_string: str) -> str:
+    with open(path, "r") as file:
+        content = file.read()
+    
+    if not old_string:
+        return "Please provide correct string to replace"
+
+    match_count = content.count(old_string)
+
+    if match_count == 1:
+        updated_content = content.replace(old_string, new_string)
+        with open(path, "w") as file:
+            file.write(updated_content)
+        return f"Replaced {old_string} with {new_string} in {path}"
+    elif match_count == 0:
+        return f"{old_string} not found in {path}"
+    
+    return f"{old_string} found {match_count} times in {path}. Please replace a unique string."
 
 def execute(tool_call):
 
@@ -70,4 +115,5 @@ def execute(tool_call):
 TOOL_REGISTRY = {
     "read_file": read_file,
     "write_file": write_file,
+    "str_replace": str_replace,
 }

@@ -18,7 +18,9 @@ You can use read_file tool to read a file.
 You can use write_file tool to write something to a file. 
 It will replace the files current content with the new content, 
 so if someone tells you to append a file, read that file first, 
-then add new content to current content and then do a write."
+then add new content to current content and then do a write.
+You ca use str_replace tool to replace content in a file directly.
+Prefer str_replace for unique edits
 """
 
 messages = [{"role": "system", "content": SYSTEM_PROMPT}]
