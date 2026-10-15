@@ -5,24 +5,25 @@ So every calls needs all the messages that has happened so far.
 Being stateless or statefull is a property of an endpoint and not code
 """
 
-
-import json
 import logging
 import requests
-import tools
+from tools import *
 
 # logging.basicConfig(level=logging.DEBUG)
 
 url = "http://127.0.0.1:8080/v1/chat/completions"
-SYSTEM_PROMPT = """
-You are an angry agent, never great and show anger!
+SYSTEM_PROMPT = """You are an angry agent, never great and show anger!
 You can use tools to perform whatever action you're told to do.
 You can use read_file tool to read a file.
+You can use write_file tool to write something to a file. 
+It will replace the files current content with the new content, 
+so if someone tells you to append a file, read that file first, 
+then add new content to current content and then do a write."
 """
 
 messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-print("\n")
+print("")
 print("-"*10)
 print("Hey! This is a locally hosted Qwen 2.5 7B Instruct model using llama.cpp (An inference enginer and runtime)")
 print("This is a small harness around it")
@@ -31,11 +32,11 @@ print("Enter exit / quit to terminate the session")
 print("-"*10)
 print("\n")
 
-while True:
+while True: # REPL Loop (Read Eval Print Loop)
 
     user_input = input(">>> ").strip()
     logging.debug(user_input)
-    
+
     if(user_input == ""):
         continue
 
@@ -49,7 +50,7 @@ while True:
         data = {
             "model": "local",
             "messages": messages,
-            "tools": tools.tools,
+            "tools": tools,
         }
 
         try:
@@ -72,28 +73,20 @@ while True:
         messages.append(assistant_msg)
 
         tool_calls = assistant_msg.get("tool_calls")
+        print(assistant_msg.get("content"))
+
         if not tool_calls:
-            print(assistant_msg.get("content"))
             break
 
         for tool_call in tool_calls:
+
             tool_call_id = tool_call["id"]
-            func_name = tool_call["function"]["name"]
+            content = execute(tool_call)
 
-            if func_name not in tools.TOOL_REGISTRY:
-                content = "Error: unknown tool: " + func_name
-            else:
-                try:
-                    func_args = json.loads(tool_call["function"]["arguments"])
-                    content = tools.TOOL_REGISTRY[func_name](**func_args)
-                except Exception as e:
-                    content = f"Tool error: {e}"
-
-            print("Tool Call:", func_name)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call_id,
-                "content": content,
-            })
-
-
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call_id,
+                    "content": content,
+                }
+            )
